@@ -4,12 +4,12 @@ A TRMNL plugin that displays unified calendar events from all your iOS/iPadOS ca
 
 ## Overview
 
-This plugin allows you to display calendar events from multiple calendars on your TRMNL device. Events are exported from your iPhone or iPad using an Apple Shortcut and sent to TRMNL via webhook.
+This plugin allows you to display calendar events from multiple calendars on your TRMNL device. Events are exported from your iPhone or iPad using an Apple Shortcut and sent to TRMNL via webhook. The plugin automatically groups events into Today, Tomorrow, and Upcoming.
 
 ## Features
 
 - Displays events from all your iOS calendars in one unified view
-- Shows events organized by: Today, Tomorrow, and Upcoming
+- Automatically groups events by: Today, Tomorrow, and Upcoming
 - Supports all-day events with special labeling
 - Configurable display options (times, calendar names, locations, notes)
 - Multiple layout options (full, half-horizontal, half-vertical, quadrant)
@@ -37,46 +37,23 @@ Upload the following files to your TRMNL private plugin:
 
 ### 3. Create the iOS Shortcut
 
-Create a new Shortcut on your iPhone/iPad with the following actions:
+Create a new Shortcut on your iPhone/iPad. The Shortcut needs to:
 
-#### Shortcut Steps:
+1. **Get today's and tomorrow's dates** as strings in `YYYY-MM-DD` format
+2. **Find Calendar Events** for your desired date range (e.g., next 14 days)
+3. **Build an events array** with each event containing the required fields
+4. **POST to TRMNL** with the data
 
-1. **Find Calendar Events**
-   - Start Date: Current Date
-   - End Date: Current Date + 14 days (or your preferred range)
+#### Example Shortcut Flow:
 
-2. **Repeat with Each** (calendar event)
-   - Create a dictionary for each event with these keys:
-     - `t` - Event title (Summary)
-     - `s` - Start date (ISO 8601 format)
-     - `e` - End date (ISO 8601 format)
-     - `a` - Is All Day (boolean)
-     - `c` - Calendar name
-     - `l` - Location (if available)
-     - `n` - Notes (if available)
-   - Add to a list
-
-3. **Filter Events by Date**
-   - Create three arrays:
-     - `today` - Events starting today
-     - `tomorrow` - Events starting tomorrow
-     - `upcoming` - Events starting after tomorrow
-
-4. **Get Contents of URL** (POST request)
-   - URL: `https://usetrmnl.com/api/custom_plugins/YOUR_PLUGIN_UUID`
-   - Method: POST
-   - Headers:
-     - `Content-Type`: `application/json`
-   - Request Body (JSON):
-     ```json
-     {
-       "merge_variables": {
-         "today": [...],
-         "tomorrow": [...],
-         "upcoming": [...]
-       }
-     }
-     ```
+```
+1. Find Calendar Events (Start: today, End: +14 days)
+2. Repeat with Each event:
+   - Create dictionary with keys: t, s, e, a, c, l, n
+   - Add to events list
+3. Create final dictionary with: events
+4. Get Contents of URL (POST to TRMNL webhook)
+```
 
 ### 4. Set Up Automations
 
@@ -88,39 +65,51 @@ Create automations to run the Shortcut:
 
 ## Data Format
 
-Events should be sent as arrays with the following structure:
+The Shortcut should send data in this format:
 
 ```json
 {
-  "merge_variables": {
-    "today": [
-      {
-        "t": "Team Meeting",
-        "s": "2025-03-25T09:00:00-04:00",
-        "e": "2025-03-25T10:00:00-04:00",
-        "a": false,
-        "c": "Work",
-        "l": "Conference Room A",
-        "n": "Weekly sync"
-      }
-    ],
-    "tomorrow": [...],
-    "upcoming": [...]
-  }
+  "events": [
+    {
+      "t": "Team Meeting",
+      "s": "2025-03-25T09:00:00-04:00",
+      "e": "2025-03-25T10:00:00-04:00",
+      "a": false,
+      "c": "Work",
+      "l": "Conference Room A",
+      "n": "Weekly sync"
+    },
+    {
+      "t": "Dentist Appointment",
+      "s": "2025-03-26T14:00:00-04:00",
+      "e": "2025-03-26T15:00:00-04:00",
+      "a": false,
+      "c": "Personal",
+      "l": "123 Main St",
+      "n": ""
+    }
+  ]
 }
 ```
 
 ### Field Reference
 
-| Key | Description | Type |
-|-----|-------------|------|
-| `t` | Event title/summary | String |
-| `s` | Start time (ISO 8601) | String |
-| `e` | End time (ISO 8601) | String |
-| `a` | All-day event | Boolean |
-| `c` | Calendar name | String |
-| `l` | Location | String (optional) |
-| `n` | Notes/description | String (optional) |
+| Key | Description | Type | Required |
+|-----|-------------|------|----------|
+| `t` | Event title/summary | String | Yes |
+| `s` | Start time (ISO 8601) | String | Yes |
+| `e` | End time (ISO 8601) | String | Yes |
+| `a` | All-day event | Boolean | Yes |
+| `c` | Calendar name | String | No |
+| `l` | Location | String | No |
+| `n` | Notes/description | String | No |
+
+## How Grouping Works
+
+The plugin computes today's and tomorrow's dates automatically, then groups events based on each event's start time:
+- Events starting today → **Today** column
+- Events starting tomorrow → **Tomorrow** column
+- All other events → **Upcoming** column
 
 ## Configuration Options
 

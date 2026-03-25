@@ -23,47 +23,60 @@ assign show_calendar_names = true
 endcase
 %}
 
+{% assign today_date = 'now' | date: '%Y-%m-%d' %}
+{% assign tomorrow_timestamp = 'now' | date: '%s' | plus: 86400 %}
+{% assign tomorrow_date = tomorrow_timestamp | date: '%Y-%m-%d' %}
+
+{% assign today_events = "" | split: "" %}
+{% assign tomorrow_events = "" | split: "" %}
+
+{% for event in events %}
+  {% assign event_date = event.s | date: '%Y-%m-%d' %}
+  {% if event_date == today_date %}
+    {% assign today_events = today_events | push: event %}
+  {% elsif event_date == tomorrow_date %}
+    {% assign tomorrow_events = tomorrow_events | push: event %}
+  {% endif %}
+{% endfor %}
+
 {% liquid
-if tomorrow != empty and today == empty
-  assign tomorrow_classes = "flex flex--col flex--stretch-x"
-  assign today_classes = "hidden"
+if tomorrow_events.size > 0 and today_events.size == 0
+  assign show_tomorrow = true
+  assign events_to_show = tomorrow_events
+  assign tomorrow_notice_classes = "hidden"
 else
-  assign today_classes = "flex flex--col flex--stretch-x"
-  assign tomorrow_classes = "title title--small text--center mt--2 mb--2"
+  assign show_tomorrow = false
+  assign events_to_show = today_events
+  if tomorrow_events.size > 0
+    assign tomorrow_notice_classes = "title title--small text--center mt--2 mb--2"
+  else
+    assign tomorrow_notice_classes = "hidden"
+  endif
 endif
 
-if today == empty or tomorrow != empty
+if today_events.size == 0 or tomorrow_events.size > 0
   assign layout_top = "layout--top"
 endif
 %}
 
 <div class="layout layout--col layout--stretch-x {{ layout_top }}" data-list-limit="true" data-list-hidden-count="true">
-  {% if tomorrow != empty and today == empty %}
-  <div class="{{ tomorrow_classes }}">
-  {% else %}
-  <div class="{{ tomorrow_classes }}">
-    {% if tomorrow.size > 0 %}
-    You have {{ tomorrow.size }} event{% if tomorrow.size != 1 %}s{% endif %} tomorrow
+  <div class="{{ tomorrow_notice_classes }}">
+    {% if tomorrow_events.size > 0 and show_tomorrow == false %}
+    You have {{ tomorrow_events.size }} event{% if tomorrow_events.size != 1 %}s{% endif %} tomorrow
     {% endif %}
   </div>
 
-  <div class="{{ today_classes }}">
-  {% endif %}
+  <div class="flex flex--col flex--stretch-x">
     <div class="bg-gray-2 p--1 text--center" style="border-radius: 8px;">
       <span class="title text--white" style="text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000;">
-        {% if tomorrow != empty and today == empty %}
+        {% if show_tomorrow %}
         {{ 'tomorrow' | l_word: trmnl.user.locale | capitalize }}
         {% else %}
         {{ 'today' | l_word: trmnl.user.locale | capitalize }}
         {% endif %}
       </span>
     </div>
-    {% if tomorrow != empty and today == empty %}
-      {% assign events_to_show = tomorrow %}
-    {% else %}
-      {% assign events_to_show = today %}
-    {% endif %}
-    {% if events_to_show == empty %}
+    {% if events_to_show.size == 0 %}
     <div class="flex flex--col lg:h--60 gap--space-between">
       <span class="title lg:title--large">All Clear</span>
       <span class="description lg:description--large">No events scheduled!</span>

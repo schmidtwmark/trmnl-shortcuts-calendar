@@ -54,8 +54,31 @@ endcase
 {% endcapture %}
 {% endunless %}
 
+{% comment %}
+Compute today and tomorrow dates, then group events by comparing event.d
+{% endcomment %}
+
+{% assign today_date = 'now' | date: '%Y-%m-%d' %}
+{% assign tomorrow_timestamp = 'now' | date: '%s' | plus: 86400 %}
+{% assign tomorrow_date = tomorrow_timestamp | date: '%Y-%m-%d' %}
+
+{% assign today_events = "" | split: "" %}
+{% assign tomorrow_events = "" | split: "" %}
+{% assign upcoming_events = "" | split: "" %}
+
+{% for event in events %}
+  {% assign event_date = event.s | date: '%Y-%m-%d' %}
+  {% if event_date == today_date %}
+    {% assign today_events = today_events | push: event %}
+  {% elsif event_date == tomorrow_date %}
+    {% assign tomorrow_events = tomorrow_events | push: event %}
+  {% else %}
+    {% assign upcoming_events = upcoming_events | push: event %}
+  {% endif %}
+{% endfor %}
+
 {% liquid
-if today == empty
+if today_events.size == 0
   assign today_portrait = "portrait:hidden"
   assign upcoming_portrait = ""
 else
@@ -72,7 +95,7 @@ endif
           {{ 'today' | l_word: trmnl.user.locale | capitalize }}
         </span>
       </div>
-      {% if today == empty %}
+      {% if today_events.size == 0 %}
       <div class="flex flex--col h--56 lg:h--80 gap--space-between">
         <span class="title lg:title--large">All Clear</span>
         <span class="description lg:description--large">No events scheduled for today!</span>
@@ -80,7 +103,7 @@ endif
         <img class="image hidden lg:block" src="https://img.icons8.com/ios/150/calendar--v1.png">
       </div>
       {% else %}
-      {% for event in today %}
+      {% for event in today_events %}
       <div class="item">
         <div class="meta">
           {% if event.a %}
@@ -114,7 +137,7 @@ endif
           {{ 'tomorrow' | l_word: trmnl.user.locale | capitalize }}
         </span>
       </div>
-      {% if tomorrow == empty %}
+      {% if tomorrow_events.size == 0 %}
       <div class="flex flex--col h--56 lg:h--80 gap--space-between">
         <span class="title lg:title--large">Nothing Yet</span>
         <span class="description lg:description--large">No events scheduled for tomorrow!</span>
@@ -122,7 +145,7 @@ endif
         <img class="image hidden lg:block" src="https://img.icons8.com/ios/150/calendar--v1.png">
       </div>
       {% else %}
-      {% for event in tomorrow %}
+      {% for event in tomorrow_events %}
       <div class="item">
         <div class="meta">
           {% if event.a %}
@@ -156,13 +179,13 @@ endif
           Upcoming
         </span>
       </div>
-      {% if upcoming == empty %}
+      {% if upcoming_events.size == 0 %}
       <div class="flex flex--col h--56 lg:h--80 gap--space-between">
         <span class="title lg:title--large">Free Time</span>
         <span class="description lg:description--large">No upcoming events!</span>
       </div>
       {% else %}
-      {% for event in upcoming %}
+      {% for event in upcoming_events %}
       <div class="item">
         <div class="meta">
           {% if event.a %}
