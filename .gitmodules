@@ -1,0 +1,6 @@
+[submodule "plugins"]
+	path = plugins
+	url = git@github.com:usetrmnl/plugins.git
+[submodule "trmnl-apple-reminders"]
+	path = trmnl-apple-reminders
+	url = git@github.com:sdjmchattie/trmnl-apple-reminders.git

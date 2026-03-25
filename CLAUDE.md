@@ -1,0 +1,3 @@
+The goal of this project is to write a TRMNL plugin that can display calendar entries sent from a Shortcut running on a user's device. TRMNL supports lots of different calendars, but I want them all to be unified into a single plugin that displays everything that is going on. 
+
+This is inspired by [Apple Reminders](https://github.com/sdjmchattie/trmnl-apple-reminders.git) plugin, which exports a users reminders via a Shortcut, then displays them. It should use the existing [calendar](https://github.com/usetrmnl/plugins/tree/master/lib/calendar) plugin for rendering, displaying the events sent from the shortcut

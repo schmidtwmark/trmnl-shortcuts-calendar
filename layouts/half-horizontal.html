@@ -1,0 +1,197 @@
+{% liquid
+case trmnl.plugin_settings.custom_fields_values.date_format
+when "2025-01-31"
+assign date_format = "%Y-%m-%d"
+when "31/01/2025"
+assign date_format = "%d/%m/%Y"
+when "01/31/2025"
+assign date_format = "%m/%d/%Y"
+else
+assign date_format = "%b %e %Y"
+endcase
+
+case trmnl.plugin_settings.custom_fields_values.time_format
+when "12_hours"
+assign time_format = "%l:%M %p"
+when "24_hours_(no_leading_zeroes_08:45)"
+assign time_format = "%k:%M"
+else
+assign time_format = "%H:%M"
+endcase
+
+case trmnl.plugin_settings.custom_fields_values.show_times
+when "no"
+assign show_times = false
+else
+assign show_times = true
+endcase
+
+case trmnl.plugin_settings.custom_fields_values.show_notes
+when "no"
+assign show_notes = false
+else
+assign show_notes = true
+endcase
+
+case trmnl.plugin_settings.custom_fields_values.show_calendar_names
+when "no"
+assign show_calendar_names = false
+else
+assign show_calendar_names = true
+endcase
+
+case trmnl.plugin_settings.custom_fields_values.show_location
+when "no"
+assign show_location = false
+else
+assign show_location = true
+endcase
+%}
+
+{% unless trmnl.plugin_settings.custom_fields_values.date_day_name == "no" %}
+{% capture date_format %}
+{{ date_format | prepend: "%a, " }}
+{% endcapture %}
+{% endunless %}
+
+{% liquid
+if today == empty
+  assign today_portrait = "portrait:hidden"
+  assign upcoming_portrait = ""
+else
+  assign today_portrait = ""
+  assign upcoming_portrait = "portrait:hidden"
+endif
+%}
+
+<div class="layout layout--row layout--top">
+  <div class="columns">
+    <div class="column {{ today_portrait }}" data-list-limit="true" data-list-hidden-count="true">
+      <div class="bg-gray-2 p--1 text--center" style="border-radius: 8px;">
+        <span class="title text--white" style="text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000;">
+          {{ 'today' | l_word: trmnl.user.locale | capitalize }}
+        </span>
+      </div>
+      {% if today == empty %}
+      <div class="flex flex--col h--28 lg:h--80 gap--space-between">
+        <span class="title lg:title--large">All Clear</span>
+        <span class="description lg:description--large">No events for today!</span>
+        <img class="image hidden lg:block" src="https://img.icons8.com/ios/150/calendar--v1.png">
+      </div>
+      {% else %}
+      {% for event in today %}
+      <div class="item">
+        <div class="meta">
+          {% if event.a %}
+          <span class="label label--small label--inverted">All Day</span>
+          {% endif %}
+        </div>
+        <div class="content">
+          <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ event.t }}</span>
+          <div class="flex gap--small">
+            {% if show_times and event.a != true %}
+            <span class="label label--small label--underline">{{ event.s | l_date: time_format, trmnl.user.locale }} - {{ event.e | l_date: time_format, trmnl.user.locale }}</span>
+            {% endif %}
+            {% if show_calendar_names and event.c != empty %}
+            <span class="label label--small">{{ event.c }}</span>
+            {% endif %}
+          </div>
+          {% if show_location and event.l != empty %}
+          <span class="label label--small">{{ event.l }}</span>
+          {% endif %}
+          {% if show_notes and event.n != empty %}
+          <span class="description" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.note_lines }}" style="word-break: normal;">{{ event.n }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+      {% endif %}
+    </div>
+    <div class="column" data-list-limit="true" data-list-hidden-count="true">
+      <div class="bg-gray-2 p--1 text--center" style="border-radius: 8px;">
+        <span class="title text--white" style="text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000;">
+          {{ 'tomorrow' | l_word: trmnl.user.locale | capitalize }}
+        </span>
+      </div>
+      {% if tomorrow == empty %}
+      <div class="flex flex--col h--28 lg:h--80 gap--space-between">
+        <span class="title lg:title--large">Nothing Yet</span>
+        <span class="description lg:description--large">No events for tomorrow!</span>
+        <img class="image hidden lg:block" src="https://img.icons8.com/ios/150/calendar--v1.png">
+      </div>
+      {% else %}
+      {% for event in tomorrow %}
+      <div class="item">
+        <div class="meta">
+          {% if event.a %}
+          <span class="label label--small label--inverted">All Day</span>
+          {% endif %}
+        </div>
+        <div class="content">
+          <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ event.t }}</span>
+          <div class="flex gap--small">
+            {% if show_times and event.a != true %}
+            <span class="label label--small label--underline">{{ event.s | l_date: time_format, trmnl.user.locale }} - {{ event.e | l_date: time_format, trmnl.user.locale }}</span>
+            {% endif %}
+            {% if show_calendar_names and event.c != empty %}
+            <span class="label label--small">{{ event.c }}</span>
+            {% endif %}
+          </div>
+          {% if show_location and event.l != empty %}
+          <span class="label label--small">{{ event.l }}</span>
+          {% endif %}
+          {% if show_notes and event.n != empty %}
+          <span class="description" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.note_lines }}" style="word-break: normal;">{{ event.n }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+      {% endif %}
+    </div>
+    <div class="column {{ upcoming_portrait }}" data-list-limit="true" data-list-hidden-count="true">
+      <div class="bg-gray-2 p--1 text--center" style="border-radius: 8px;">
+        <span class="title text--white" style="text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000;">
+          Upcoming
+        </span>
+      </div>
+      {% for event in upcoming %}
+      <div class="item">
+        <div class="meta">
+          {% if event.a %}
+          <span class="label label--small label--inverted">All Day</span>
+          {% endif %}
+        </div>
+        <div class="content">
+          <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ event.t }}</span>
+          <div class="flex gap--small">
+            <span class="label label--small label--underline">{{ event.s | l_date: date_format, trmnl.user.locale }}</span>
+            {% if show_times and event.a != true %}
+            <span class="label label--small">{{ event.s | l_date: time_format, trmnl.user.locale }}</span>
+            {% endif %}
+            {% if show_calendar_names and event.c != empty %}
+            <span class="label label--small">{{ event.c }}</span>
+            {% endif %}
+          </div>
+          {% if show_location and event.l != empty %}
+          <span class="label label--small">{{ event.l }}</span>
+          {% endif %}
+          {% if show_notes and event.n != empty %}
+          <span class="description" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.note_lines }}" style="word-break: normal;">{{ event.n }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="title_bar">
+  <img class="image" src="https://img.icons8.com/ios/30/calendar--v1.png">
+  <span class="title">{{ trmnl.plugin_settings.instance_name }}</span>
+  {% case trmnl.plugin_settings.custom_fields_values.right_label %}
+  {% when "attribution" %}
+  <span class="instance">Shortcuts Calendar</span>
+  {% when "your_name" %}
+  <span class="instance">{{ trmnl.user.name }}</span>
+  {% endcase %}
+</div>
