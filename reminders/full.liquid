@@ -32,6 +32,8 @@ assign show_list_names = false
 else
 assign show_list_names = true
 endcase
+
+assign title_lines = trmnl.plugin_settings.custom_fields_values.title_lines | default: 1
 %}
 
 {% unless trmnl.plugin_settings.custom_fields_values.date_day_name == "no" %}
@@ -83,7 +85,7 @@ endif
               {% if overdue.f %}<span class="index">!</span>{% else %}<span class="index">1</span>{% endif %}
             </div>
             <div class="content">
-              <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ overdue.n }}</span>
+              <span class="title title--small" data-clamp="{{ title_lines }}">{{ overdue.n }}</span>
               <div class="flex gap--xsmall">
                 {% if show_dates_and_times %}
                 <span class="label label--small label--underline">{{ overdue.d | date: date_format }}</span>
@@ -102,7 +104,7 @@ endif
               {% if item.f %}<span class="index">!</span>{% else %}<span class="index">{{ forloop.index }}</span>{% endif %}
             </div>
             <div class="content">
-              <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ item.n }}</span>
+              <span class="title title--small" data-clamp="{{ title_lines }}">{{ item.n }}</span>
               <div class="flex gap--xsmall">
                 {% if show_dates_and_times %}
                 <span class="label label--small label--underline">{{ item.d | date: date_format }}</span>
@@ -135,7 +137,7 @@ endif
               {% if item.f %}<span class="index">!</span>{% else %}<span class="index">{{ forloop.index }}</span>{% endif %}
             </div>
             <div class="content">
-              <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ item.n }}</span>
+              <span class="title title--small" data-clamp="{{ title_lines }}">{{ item.n }}</span>
               <div class="flex gap--xsmall">
                 {% if show_dates_and_times %}
                 {% assign item_time = item.d | date: time_format %}
@@ -172,7 +174,7 @@ endif
               {% if item.f %}<span class="index">!</span>{% else %}<span class="index">{{ forloop.index }}</span>{% endif %}
             </div>
             <div class="content">
-              <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ item.n }}</span>
+              <span class="title title--small" data-clamp="{{ title_lines }}">{{ item.n }}</span>
               <div class="flex gap--xsmall">
                 {% if show_dates_and_times %}
                 <span class="label label--small label--underline">{{ item.d | date: date_format }}</span>
