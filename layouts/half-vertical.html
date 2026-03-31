@@ -7,7 +7,7 @@ assign date_format = "%d/%m/%Y"
 when "01/31/2025"
 assign date_format = "%m/%d/%Y"
 else
-assign date_format = "%b %e %Y"
+assign date_format = "%b %e"
 endcase
 
 case trmnl.plugin_settings.custom_fields_values.time_format
@@ -49,150 +49,92 @@ endcase
 %}
 
 {% unless trmnl.plugin_settings.custom_fields_values.date_day_name == "no" %}
-{% capture date_format %}
-{{ date_format | prepend: "%a, " }}
-{% endcapture %}
+{% capture date_format %}%a, {{ date_format }}{% endcapture %}
 {% endunless %}
 
 {% assign today_date = 'now' | date: '%Y-%m-%d' %}
 {% assign tomorrow_timestamp = 'now' | date: '%s' | plus: 86400 %}
 {% assign tomorrow_date = tomorrow_timestamp | date: '%Y-%m-%d' %}
+{% assign current_day = "" %}
+{% assign day_count = 0 %}
 
-{% assign today_events = "" | split: "" %}
-{% assign tomorrow_events = "" | split: "" %}
-{% assign upcoming_events = "" | split: "" %}
+<div class="view view--half_vertical">
+  <div class="layout layout--col layout--top">
+    <div class="column" data-list-limit="true" data-list-max-height="340" data-list-hidden-count="true">
+      <div class="list">
+        {% for event in events %}
+          {% assign event_date = event.s | date: '%Y-%m-%d' %}
 
-{% for event in events %}
-  {% assign event_date = event.s | date: '%Y-%m-%d' %}
-  {% if event_date == today_date %}
-    {% assign today_events = today_events | push: event %}
-  {% elsif event_date == tomorrow_date %}
-    {% assign tomorrow_events = tomorrow_events | push: event %}
-  {% else %}
-    {% assign upcoming_events = upcoming_events | push: event %}
-  {% endif %}
-{% endfor %}
-
-{% liquid
-if today_events.size == 0
-  assign today_classes = "hidden"
-else
-  assign today_classes = "flex flex--col flex--stretch-x"
-endif
-
-if tomorrow_events.size == 0
-  assign tomorrow_classes = "hidden"
-else
-  assign tomorrow_classes = "flex flex--col flex--stretch-x"
-endif
-%}
-
-<div class="layout layout--col layout--top layout--stretch-x" data-list-limit="true" data-list-hidden-count="true">
-  <div class="{{ today_classes }}">
-    <div class="bg-gray-2 p--1 text--center" style="border-radius: 8px;">
-      <span class="title text--white" style="text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000;">
-        {{ 'today' | l_word: trmnl.user.locale | capitalize }}
-      </span>
-    </div>
-    {% for event in today_events %}
-    <div class="item">
-      <div class="meta">
-        {% if event.a %}
-        <span class="label label--small label--inverted">All Day</span>
-        {% endif %}
-      </div>
-      <div class="content">
-        <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ event.t }}</span>
-        <div class="flex gap--small">
-          {% if show_times and event.a != true %}
-          <span class="label label--small label--underline">{{ event.s | l_date: time_format, trmnl.user.locale }} - {{ event.e | l_date: time_format, trmnl.user.locale }}</span>
+          {% comment %} Show day header when date changes (limit to 3 days) {% endcomment %}
+          {% if event_date != current_day and day_count < 3 %}
+            {% assign current_day = event_date %}
+            {% assign day_count = day_count | plus: 1 %}
+            <span class="label label--medium">
+              {% if event_date == today_date %}
+                {{ 'today' | l_word: trmnl.user.locale | capitalize }}
+              {% elsif event_date == tomorrow_date %}
+                {{ 'tomorrow' | l_word: trmnl.user.locale | capitalize }}
+              {% else %}
+                {{ event.s | date: date_format }}
+              {% endif %}
+            </span>
           {% endif %}
-          {% if show_calendar_names and event.c != empty %}
-          <span class="label label--small">{{ event.c }}</span>
+
+          {% comment %} Only show events from allowed days {% endcomment %}
+          {% if event_date == current_day %}
+            <div class="item">
+              <div class="meta">
+                {% if event.a == true %}
+                <span class="index">#</span>
+                {% else %}
+                <span class="index">{{ forloop.index }}</span>
+                {% endif %}
+              </div>
+              <div class="content">
+                <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ event.t }}</span>
+                {% if event.a != true %}
+                <div class="flex gap--xsmall">
+                  {% if show_times %}
+                  <span class="label label--small label--underline">{{ event.s | l_date: time_format, trmnl.user.locale }} - {{ event.e | l_date: time_format, trmnl.user.locale }}</span>
+                  {% endif %}
+                  {% if show_calendar_names and event.c != empty %}
+                  <span class="label label--small">{{ event.c }}</span>
+                  {% endif %}
+                </div>
+                {% if show_location and event.l != empty %}
+                <span class="label label--small">{{ event.l }}</span>
+                {% endif %}
+                {% if show_notes and event.n != empty %}
+                <span class="description" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.note_lines }}" style="word-break: normal;">{{ event.n }}</span>
+                {% endif %}
+                {% endif %}
+              </div>
+            </div>
           {% endif %}
+        {% endfor %}
+
+        {% comment %} Show empty state if no events {% endcomment %}
+        {% if events.size == 0 %}
+        <span class="label label--medium">{{ 'today' | l_word: trmnl.user.locale | capitalize }}</span>
+        <div class="flex flex--col gap--space-between">
+          <span class="title">All Clear</span>
+          <span class="description">No upcoming events!</span>
         </div>
-        {% if show_location and event.l != empty %}
-        <span class="label label--small">{{ event.l }}</span>
-        {% endif %}
-        {% if show_notes and event.n != empty %}
-        <span class="description" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.note_lines }}" style="word-break: normal;">{{ event.n }}</span>
         {% endif %}
       </div>
     </div>
-    {% endfor %}
   </div>
 
-  <div class="{{ tomorrow_classes }}">
-    <div class="bg-gray-2 p--1 text--center" style="border-radius: 8px;">
-      <span class="title text--white" style="text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000;">
-        {{ 'tomorrow' | l_word: trmnl.user.locale | capitalize }}
-      </span>
-    </div>
-    {% for event in tomorrow_events %}
-    <div class="item">
-      <div class="meta">
-        {% if event.a %}
-        <span class="label label--small label--inverted">All Day</span>
-        {% endif %}
-      </div>
-      <div class="content">
-        <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ event.t }}</span>
-        <div class="flex gap--small">
-          {% if show_times and event.a != true %}
-          <span class="label label--small label--underline">{{ event.s | l_date: time_format, trmnl.user.locale }} - {{ event.e | l_date: time_format, trmnl.user.locale }}</span>
-          {% endif %}
-          {% if show_calendar_names and event.c != empty %}
-          <span class="label label--small">{{ event.c }}</span>
-          {% endif %}
-        </div>
-        {% if show_location and event.l != empty %}
-        <span class="label label--small">{{ event.l }}</span>
-        {% endif %}
-        {% if show_notes and event.n != empty %}
-        <span class="description" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.note_lines }}" style="word-break: normal;">{{ event.n }}</span>
-        {% endif %}
-      </div>
-    </div>
-    {% endfor %}
+  <div class="title_bar">
+    <img class="image" src="https://img.icons8.com/ios/30/calendar--v1.png">
+    <span class="title">Upcoming Events</span>
+    {% case trmnl.plugin_settings.custom_fields_values.right_label %}
+    {% when "attribution" %}
+    <span class="instance">Shortcuts Calendar</span>
+    {% when "your_name" %}
+    <span class="instance">{{ trmnl.user.name }}</span>
+    {% when "instance_name" %}
+    <span class="instance">{{ trmnl.plugin_settings.instance_name }}</span>
+    {% endcase %}
   </div>
-
-  <div class="flex flex--col flex--stretch-x">
-    <div class="bg-gray-2 p--1 text--center" style="border-radius: 8px;">
-      <span class="title text--white" style="text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000;">
-        Upcoming
-      </span>
-    </div>
-    {% for event in upcoming_events %}
-    <div class="item">
-      <div class="meta">
-        {% if event.a %}
-        <span class="label label--small label--inverted">All Day</span>
-        {% endif %}
-      </div>
-      <div class="content">
-        <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ event.t }}</span>
-        <div class="flex gap--small">
-          <span class="label label--small label--underline">{{ event.s | l_date: date_format, trmnl.user.locale }}</span>
-          {% if show_times and event.a != true %}
-          <span class="label label--small">{{ event.s | l_date: time_format, trmnl.user.locale }}</span>
-          {% endif %}
-          {% if show_calendar_names and event.c != empty %}
-          <span class="label label--small">{{ event.c }}</span>
-          {% endif %}
-        </div>
-        {% if show_location and event.l != empty %}
-        <span class="label label--small">{{ event.l }}</span>
-        {% endif %}
-        {% if show_notes and event.n != empty %}
-        <span class="description" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.note_lines }}" style="word-break: normal;">{{ event.n }}</span>
-        {% endif %}
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-</div>
-
-<div class="title_bar">
-  <img class="image" src="https://img.icons8.com/ios/30/calendar--v1.png">
-  <span class="title">{{ trmnl.plugin_settings.instance_name }}</span>
 </div>

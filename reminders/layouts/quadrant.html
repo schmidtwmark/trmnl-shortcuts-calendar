@@ -1,0 +1,99 @@
+{% liquid
+case trmnl.plugin_settings.custom_fields_values.time_format
+when "12_hours"
+assign time_format = "%l:%M %p"
+when "24_hours_(no_leading_zeroes_08:45)"
+assign time_format = "%k:%M"
+else
+assign time_format = "%H:%M"
+endcase
+
+case trmnl.plugin_settings.custom_fields_values.show_dates_and_times
+when "no"
+assign show_dates_and_times = false
+else
+assign show_dates_and_times = true
+endcase
+%}
+
+{% comment %} Check if overdue is a single object or array {% endcomment %}
+{% assign overdue_is_object = false %}
+{% if overdue.n %}
+  {% assign overdue_is_object = true %}
+{% endif %}
+
+{% if overdue_is_object %}
+  {% assign overdue_count = 1 %}
+{% else %}
+  {% assign overdue_count = overdue.size %}
+{% endif %}
+{% assign today_count = today.size %}
+
+<div class="view view--quadrant">
+  <div class="layout layout--top" style="flex-flow: wrap; align-items: flex-start;">
+    <div class="column">
+      <div class="list">
+
+        {% comment %} Overdue section {% endcomment %}
+        {% if overdue_count > 0 %}
+        <span class="label">Overdue</span>
+        {% if overdue_is_object %}
+        <div class="item">
+          <div class="meta">
+            {% if overdue.f %}<span class="index">!</span>{% else %}<span class="index">1</span>{% endif %}
+          </div>
+          <div class="content">
+            <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ overdue.n }}</span>
+          </div>
+        </div>
+        {% else %}
+        {% for item in overdue %}
+        <div class="item">
+          <div class="meta">
+            {% if item.f %}<span class="index">!</span>{% else %}<span class="index">{{ forloop.index }}</span>{% endif %}
+          </div>
+          <div class="content">
+            <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ item.n }}</span>
+          </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endif %}
+
+        {% comment %} Today section {% endcomment %}
+        <span class="label">{{ 'today' | l_word: trmnl.user.locale | capitalize }}</span>
+        {% if today_count == 0 %}
+        <div class="item">
+          <div class="content">
+            <span class="title title--small">Nothing due</span>
+          </div>
+        </div>
+        {% else %}
+        {% for item in today %}
+        <div class="item">
+          <div class="meta">
+            {% if item.f %}<span class="index">!</span>{% else %}<span class="index">{{ forloop.index }}</span>{% endif %}
+          </div>
+          <div class="content">
+            <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ item.n }}</span>
+            {% if show_dates_and_times %}
+            {% assign item_time = item.d | date: time_format %}
+            {% assign midnight = "1980-01-01" | date: time_format %}
+            {% if item_time != midnight %}
+            <span class="label label--small label--underline">{{ item_time }}</span>
+            {% endif %}
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  <div class="title_bar">
+    <img class="image" src="https://usetrmnl.com/images/plugins/trmnl--render.svg">
+    <span class="title">Reminders</span>
+  </div>
+</div>

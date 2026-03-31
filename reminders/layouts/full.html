@@ -1,0 +1,205 @@
+{% liquid
+case trmnl.plugin_settings.custom_fields_values.date_format
+when "2025-01-31"
+assign date_format = "%Y-%m-%d"
+when "31/01/2025"
+assign date_format = "%d/%m/%Y"
+when "01/31/2025"
+assign date_format = "%m/%d/%Y"
+else
+assign date_format = "%b %e"
+endcase
+
+case trmnl.plugin_settings.custom_fields_values.time_format
+when "12_hours"
+assign time_format = "%l:%M %p"
+when "24_hours_(no_leading_zeroes_08:45)"
+assign time_format = "%k:%M"
+else
+assign time_format = "%H:%M"
+endcase
+
+case trmnl.plugin_settings.custom_fields_values.show_dates_and_times
+when "no"
+assign show_dates_and_times = false
+else
+assign show_dates_and_times = true
+endcase
+
+case trmnl.plugin_settings.custom_fields_values.show_list_names
+when "no"
+assign show_list_names = false
+else
+assign show_list_names = true
+endcase
+%}
+
+{% unless trmnl.plugin_settings.custom_fields_values.date_day_name == "no" %}
+{% capture date_format %}%a, {{ date_format }}{% endcapture %}
+{% endunless %}
+
+{% comment %} Check if overdue is a single object or array {% endcomment %}
+{% assign overdue_is_object = false %}
+{% if overdue.n %}
+  {% assign overdue_is_object = true %}
+{% endif %}
+
+{% comment %} Count items in each section {% endcomment %}
+{% if overdue_is_object %}
+  {% assign overdue_count = 1 %}
+{% else %}
+  {% assign overdue_count = overdue.size %}
+{% endif %}
+{% assign today_count = today.size %}
+{% assign future_count = future.size %}
+
+{% liquid
+if overdue_count == 0
+  assign overdue_portrait = "portrait:hidden"
+  assign upcoming_portrait = ""
+else
+  assign overdue_portrait = ""
+  assign upcoming_portrait = "portrait:hidden"
+endif
+%}
+
+<div class="view view--full">
+  <div class="layout layout--col layout--top">
+    <div class="columns">
+      {% comment %} Overdue column {% endcomment %}
+      <div class="column {{ overdue_portrait }}" data-list-limit="true" data-list-hidden-count="true">
+        <div class="list">
+          <span class="label label--medium">Overdue</span>
+          {% if overdue_count == 0 %}
+          <div class="item">
+            <div class="content">
+              <span class="title title--small">All caught up!</span>
+            </div>
+          </div>
+          {% elsif overdue_is_object %}
+          {% comment %} Single overdue item {% endcomment %}
+          <div class="item">
+            <div class="meta">
+              {% if overdue.f %}<span class="index">!</span>{% else %}<span class="index">1</span>{% endif %}
+            </div>
+            <div class="content">
+              <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ overdue.n }}</span>
+              <div class="flex gap--xsmall">
+                {% if show_dates_and_times %}
+                <span class="label label--small label--underline">{{ overdue.d | date: date_format }}</span>
+                {% endif %}
+                {% if show_list_names %}
+                <span class="label label--small">{{ overdue.l }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% else %}
+          {% comment %} Array of overdue items {% endcomment %}
+          {% for item in overdue %}
+          <div class="item">
+            <div class="meta">
+              {% if item.f %}<span class="index">!</span>{% else %}<span class="index">{{ forloop.index }}</span>{% endif %}
+            </div>
+            <div class="content">
+              <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ item.n }}</span>
+              <div class="flex gap--xsmall">
+                {% if show_dates_and_times %}
+                <span class="label label--small label--underline">{{ item.d | date: date_format }}</span>
+                {% endif %}
+                {% if show_list_names %}
+                <span class="label label--small">{{ item.l }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+
+      {% comment %} Today column {% endcomment %}
+      <div class="column" data-list-limit="true" data-list-hidden-count="true">
+        <div class="list">
+          <span class="label label--medium">{{ 'today' | l_word: trmnl.user.locale | capitalize }}</span>
+          {% if today_count == 0 %}
+          <div class="item">
+            <div class="content">
+              <span class="title title--small">Nothing due today</span>
+            </div>
+          </div>
+          {% else %}
+          {% for item in today %}
+          <div class="item">
+            <div class="meta">
+              {% if item.f %}<span class="index">!</span>{% else %}<span class="index">{{ forloop.index }}</span>{% endif %}
+            </div>
+            <div class="content">
+              <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ item.n }}</span>
+              <div class="flex gap--xsmall">
+                {% if show_dates_and_times %}
+                {% assign item_time = item.d | date: time_format %}
+                {% assign midnight = "1980-01-01" | date: time_format %}
+                {% if item_time != midnight %}
+                <span class="label label--small label--underline">{{ item_time }}</span>
+                {% endif %}
+                {% endif %}
+                {% if show_list_names %}
+                <span class="label label--small">{{ item.l }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+
+      {% comment %} Upcoming column {% endcomment %}
+      <div class="column {{ upcoming_portrait }}" data-list-limit="true" data-list-hidden-count="true">
+        <div class="list">
+          <span class="label label--medium">Upcoming</span>
+          {% if future_count == 0 %}
+          <div class="item">
+            <div class="content">
+              <span class="title title--small">Nothing scheduled</span>
+            </div>
+          </div>
+          {% else %}
+          {% for item in future %}
+          <div class="item">
+            <div class="meta">
+              {% if item.f %}<span class="index">!</span>{% else %}<span class="index">{{ forloop.index }}</span>{% endif %}
+            </div>
+            <div class="content">
+              <span class="title title--small" data-clamp="{{ trmnl.plugin_settings.custom_fields_values.title_lines }}">{{ item.n }}</span>
+              <div class="flex gap--xsmall">
+                {% if show_dates_and_times %}
+                <span class="label label--small label--underline">{{ item.d | date: date_format }}</span>
+                {% endif %}
+                {% if show_list_names %}
+                <span class="label label--small">{{ item.l }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="title_bar">
+  <img class="image" src="https://usetrmnl.com/images/plugins/trmnl--render.svg">
+  <span class="title">Reminders</span>
+  {% case trmnl.plugin_settings.custom_fields_values.right_label %}
+  {% when "attribution" %}
+  <span class="instance">Shortcuts Reminders</span>
+  {% when "your_name" %}
+  <span class="instance">{{ trmnl.user.name }}</span>
+  {% when "instance_name" %}
+  <span class="instance">{{ trmnl.plugin_settings.instance_name }}</span>
+  {% endcase %}
+</div>
